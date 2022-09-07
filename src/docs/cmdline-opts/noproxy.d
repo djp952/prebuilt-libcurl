@@ -1,3 +1,5 @@
+c: Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
+SPDX-License-Identifier: curl
 Long: noproxy
 Arg: <no-proxy-list>
 Help: List of hosts which do not use proxy
@@ -15,4 +17,4 @@ not www.notlocal.com.
 
 Since 7.53.0, This option overrides the environment variables that disable the
 proxy ('no_proxy' and 'NO_PROXY'). If there's an environment variable
-disabling a proxy, you can set the noproxy list to \&"" to override it.
+disabling a proxy, you can set the noproxy list to "" to override it.

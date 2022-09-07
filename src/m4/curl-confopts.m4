@@ -18,6 +18,8 @@
 # This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
 # KIND, either express or implied.
 #
+# SPDX-License-Identifier: curl
+#
 #***************************************************************************
 
 # File version for 'aclocal' use. Keep it a single number.
@@ -419,10 +421,8 @@ dnl Check for how to set a socket into non-blocking state.
 
 AC_DEFUN([CURL_CHECK_NONBLOCKING_SOCKET], [
   AC_REQUIRE([CURL_CHECK_FUNC_FCNTL])dnl
-  AC_REQUIRE([CURL_CHECK_FUNC_IOCTL])dnl
   AC_REQUIRE([CURL_CHECK_FUNC_IOCTLSOCKET])dnl
   AC_REQUIRE([CURL_CHECK_FUNC_IOCTLSOCKET_CAMEL])dnl
-  AC_REQUIRE([CURL_CHECK_FUNC_SETSOCKOPT])dnl
   #
   tst_method="unknown"
 

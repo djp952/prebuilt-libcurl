@@ -18,6 +18,8 @@
  * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
  * KIND, either express or implied.
  *
+ * SPDX-License-Identifier: curl
+ *
  ***************************************************************************/
 #include "tool_setup.h"
 
@@ -276,6 +278,11 @@ int main(int argc, char *argv[])
     /* Perform the main cleanup */
     main_free(&global);
   }
+
+#ifdef WIN32
+  /* Flush buffers of all streams opened in write or update mode */
+  fflush(NULL);
+#endif
 
 #ifdef __NOVELL_LIBC__
   if(!getenv("_IN_NETWARE_BASH_"))

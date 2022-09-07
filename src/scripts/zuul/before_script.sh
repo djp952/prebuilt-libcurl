@@ -19,10 +19,12 @@
 # This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
 # KIND, either express or implied.
 #
+# SPDX-License-Identifier: curl
+#
 ###########################################################################
 set -eo pipefail
 
-./buildconf
+autoreconf -fi
 
 if [ "$NGTCP2" = yes ]; then
   if [ "$TRAVIS_OS_NAME" = linux -a "$GNUTLS" ]; then
@@ -35,10 +37,10 @@ if [ "$NGTCP2" = yes ]; then
     make install
 
     cd $HOME
-    git clone --depth 1 https://gitlab.com/gnutls/gnutls.git pgtls
+    git clone --depth 1 -b 3.7.4 https://gitlab.com/gnutls/gnutls.git pgtls
     cd pgtls
     ./bootstrap
-    ./configure PKG_CONFIG_PATH=$HOME/ngbuild/lib/pkgconfig LDFLAGS="-Wl,-rpath,$HOME/ngbuild/lib" --with-included-libtasn1 --with-included-unistring --disable-guile --disable-doc --prefix=$HOME/ngbuild
+    ./configure PKG_CONFIG_PATH=$HOME/ngbuild/lib/pkgconfig LDFLAGS="-Wl,-rpath,$HOME/ngbuild/lib" --with-included-libtasn1 --with-included-unistring --disable-guile --disable-doc --disable-tools --without-zstd --disable-psk-authentication --prefix=$HOME/ngbuild
     make
     make install
   else
@@ -74,7 +76,10 @@ if [ "$TRAVIS_OS_NAME" = linux -a "$BORINGSSL" ]; then
   cd $HOME
   git clone --depth=1 https://boringssl.googlesource.com/boringssl
   cd boringssl
-  CXX="g++" CC="gcc" cmake -H. -Bbuild -GNinja -DCMAKE_BUILD_TYPE=release -DBUILD_SHARED_LIBS=1
+  mkdir -p build
+  cd ./build
+  CXX="g++" CC="gcc" cmake .. -GNinja -DCMAKE_BUILD_TYPE=release -DBUILD_SHARED_LIBS=1
+  cd ..
   cmake --build build
   mkdir lib
   cp ./build/crypto/libcrypto.so ./lib/
@@ -82,28 +87,11 @@ if [ "$TRAVIS_OS_NAME" = linux -a "$BORINGSSL" ]; then
   echo "BoringSSL lib dir: "`pwd`"/lib"
   cmake --build build --target clean
   rm -f build/CMakeCache.txt
-  CXX="g++" CC="gcc" cmake -H. -Bbuild -GNinja -DCMAKE_POSITION_INDEPENDENT_CODE=on
+  cd ./build
+  CXX="g++" CC="gcc" cmake .. -GNinja -DCMAKE_POSITION_INDEPENDENT_CODE=on
+  cd ..
   cmake --build build
   export LIBS=-lpthread
-fi
-
-if [ "$TRAVIS_OS_NAME" = linux -a "$OPENSSL3" ]; then
-  cd $HOME
-  git clone --depth=1 https://github.com/openssl/openssl
-  cd openssl
-  ./config enable-tls1_3 --prefix=$HOME/openssl3
-  make
-  make install_sw
-fi
-
-if [ "$TRAVIS_OS_NAME" = linux -a "$LIBRESSL" ]; then
-  cd $HOME
-  git clone --depth=1 -b v3.1.4 https://github.com/libressl-portable/portable.git libressl-git
-  cd libressl-git
-  ./autogen.sh
-  ./configure --prefix=$HOME/libressl
-  make
-  make install
 fi
 
 if [ "$TRAVIS_OS_NAME" = linux -a "$QUICHE" ]; then
@@ -120,22 +108,4 @@ if [ "$TRAVIS_OS_NAME" = linux -a "$QUICHE" ]; then
   cargo build -v --package quiche --release --features ffi,pkg-config-meta,qlog
   mkdir -v quiche/deps/boringssl/src/lib
   ln -vnf $(find target/release -name libcrypto.a -o -name libssl.a) quiche/deps/boringssl/src/lib/
-fi
-
-# Install common libraries.
-if [ $TRAVIS_OS_NAME = linux ]; then
-
-  if [ "$BEARSSL" = "yes" ]; then
-    if [ ! -e $HOME/bearssl-0.6/Makefile ]; then
-      cd $HOME
-      curl -LO https://bearssl.org/bearssl-0.6.tar.gz
-      tar -xzf bearssl-0.6.tar.gz
-      cd bearssl-0.6
-      make
-    fi
-    cd $HOME/bearssl-0.6
-    sudo cp inc/*.h /usr/local/include
-    sudo cp build/libbearssl.* /usr/local/lib
-  fi
-
 fi

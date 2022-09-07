@@ -1,3 +1,5 @@
+c: Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
+SPDX-License-Identifier: curl
 Long: range
 Short: r
 Help: Retrieve only the bytes within RANGE
@@ -36,7 +38,7 @@ response, which will be returned as-is by curl! Parsing or otherwise
 transforming this response is the responsibility of the caller.
 
 Only digit characters (0-9) are valid in the 'start' and 'stop' fields of the
-\&'start-stop' range syntax. If a non-digit character is given in the range,
+'start-stop' range syntax. If a non-digit character is given in the range,
 the server's response will be unspecified, depending on the server's
 configuration.
 

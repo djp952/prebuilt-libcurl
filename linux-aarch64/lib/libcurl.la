@@ -23,8 +23,8 @@ dependency_libs=' -L/home/djp952/prebuilt-libz/linux-aarch64/lib -L/home/djp952/
 weak_library_names=''
 
 # Version information for libcurl.
-current=11
-age=7
+current=12
+age=8
 revision=0
 
 # Is this an already installed library?

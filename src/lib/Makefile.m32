@@ -5,7 +5,7 @@
 #                            | (__| |_| |  _ <| |___
 #                             \___|\___/|_| \_\_____|
 #
-# Copyright (C) 1999 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+# Copyright (C) 1999 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
 #
 # This software is licensed as described in the file COPYING, which
 # you should have received as part of this distribution. The terms
@@ -17,6 +17,8 @@
 #
 # This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
 # KIND, either express or implied.
+#
+# SPDX-License-Identifier: curl
 #
 #***************************************************************************
 
@@ -106,17 +108,21 @@ endif
 ifeq ($(CURL_RANLIB),)
 CURL_RANLIB := $(CROSSPREFIX)ranlib
 endif
+ifeq ($(CURL_RC),)
+CURL_RC := $(CROSSPREFIX)windres
+endif
+ifeq ($(CURL_STRIP),)
+CURL_STRIP := $(CROSSPREFIX)strip
+endif
 
 CC = $(CURL_CC)
-CFLAGS = $(CURL_CFLAG_EXTRAS) -g -O2 -Wall -W
-CFLAGS += -fno-strict-aliasing
-# comment LDFLAGS below to keep debug info
-LDFLAGS = $(CURL_LDFLAG_EXTRAS) $(CURL_LDFLAG_EXTRAS_DLL) -s
+CFLAGS = -O3 $(CURL_CFLAG_EXTRAS) -W -Wall
+LDFLAGS = $(CURL_LDFLAG_EXTRAS) $(CURL_LDFLAG_EXTRAS_DLL)
 AR = $(CURL_AR)
 RANLIB = $(CURL_RANLIB)
-RC = $(CROSSPREFIX)windres
-RCFLAGS = --include-dir=$(PROOT)/include -DDEBUGBUILD=0 -O coff
-STRIP   = $(CROSSPREFIX)strip -g
+RC = $(CURL_RC)
+RCFLAGS = --include-dir=$(PROOT)/include -O coff $(CURL_RCFLAG_EXTRAS)
+STRIP   = $(CURL_STRIP) -g
 
 # Set environment var ARCH to your architecture to override autodetection.
 ifndef ARCH
@@ -127,14 +133,16 @@ ARCH = w32
 endif
 endif
 
+ifneq ($(ARCH),custom)
 ifeq ($(ARCH),w64)
-CFLAGS  += -m64 -D_AMD64_
+CFLAGS  += -m64
 LDFLAGS += -m64
 RCFLAGS += -F pe-x86-64
 else
 CFLAGS  += -m32
 LDFLAGS += -m32
 RCFLAGS += -F pe-i386
+endif
 endif
 
 # Platform-dependent helper tool macros
@@ -279,22 +287,29 @@ ifdef SSH2
   DLL_LIBS += -L"$(LIBSSH2_PATH)/win32" -lssh2
   ifdef SCHANNEL
     ifndef DYN
-      DLL_LIBS += -lbcrypt -lcrypt32
+      DLL_LIBS += -lcrypt32
+    endif
+  endif
+endif
+ifdef NGHTTP3
+  INCLUDES += -I"$(NGHTTP3_PATH)/include"
+  CFLAGS += -DUSE_NGHTTP3
+  DLL_LIBS += -L"$(NGHTTP3_PATH)/lib" -lnghttp3
+  ifdef NGTCP2
+    INCLUDES += -I"$(NGTCP2_PATH)/include"
+    CFLAGS += -DUSE_NGTCP2
+    DLL_LIBS += -L"$(NGTCP2_PATH)/lib"
+    ifdef NGTCP2_LIBS
+      DLL_LIBS += $(NGTCP2_LIBS)
+    else
+      DLL_LIBS += -lngtcp2
+      ifdef SSL
+        DLL_LIBS += -lngtcp2_crypto_openssl
+      endif
     endif
   endif
 endif
 ifdef SSL
-  ifdef NGHTTP3
-    INCLUDES += -I"$(NGHTTP3_PATH)/include"
-    CFLAGS += -DUSE_NGHTTP3
-    DLL_LIBS += -L"$(NGHTTP3_PATH)/lib" -lnghttp3
-    ifdef NGTCP2
-      INCLUDES += -I"$(NGTCP2_PATH)/include"
-      CFLAGS += -DUSE_NGTCP2
-      DLL_LIBS += -L"$(NGTCP2_PATH)/lib" -lngtcp2 -lngtcp2_crypto_openssl
-    endif
-  endif
-
   ifndef OPENSSL_INCLUDE
     ifeq "$(wildcard $(OPENSSL_PATH)/outinc)" "$(OPENSSL_PATH)/outinc"
       OPENSSL_INCLUDE = $(OPENSSL_PATH)/outinc
@@ -320,8 +335,7 @@ ifdef SSL
     OPENSSL_LIBS += -lgdi32 -lcrypt32
   endif
   INCLUDES += -I"$(OPENSSL_INCLUDE)"
-  CFLAGS += -DUSE_OPENSSL -DHAVE_OPENSSL_PKCS12_H \
-            -DOPENSSL_NO_KRB5
+  CFLAGS += -DUSE_OPENSSL
   DLL_LIBS += -L"$(OPENSSL_LIBPATH)" $(OPENSSL_LIBS)
   ifdef SRP
     ifeq "$(wildcard $(OPENSSL_INCLUDE)/openssl/srp.h)" "$(OPENSSL_INCLUDE)/openssl/srp.h"
@@ -381,7 +395,7 @@ ifdef SPNEGO
   CFLAGS += -DHAVE_SPNEGO
 endif
 ifdef IPV6
-  CFLAGS += -DENABLE_IPV6 -D_WIN32_WINNT=0x0501
+  CFLAGS += -DENABLE_IPV6
 endif
 ifdef LDAPS
   CFLAGS += -DHAVE_LDAP_SSL
@@ -401,7 +415,7 @@ ifndef USE_LDAP_OPENLDAP
   DLL_LIBS += -lwldap32
 endif
 endif
-DLL_LIBS += -lws2_32
+DLL_LIBS += -lws2_32 -lbcrypt
 
 # Makefile.inc provides the CSOURCES and HHEADERS defines
 include Makefile.inc
@@ -447,6 +461,3 @@ clean:
 
 distclean vclean: clean
 	@$(call DEL, $(libcurl_a_LIBRARY) $(libcurl_dll_LIBRARY) $(libcurl_dll_LIBRARY:.dll=.def) $(libcurl_dll_a_LIBRARY))
-
-$(LIBCARES_PATH)/libcares.a:
-	$(MAKE) -C $(LIBCARES_PATH) -f Makefile.m32

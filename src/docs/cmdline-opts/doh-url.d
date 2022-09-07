@@ -1,3 +1,5 @@
+c: Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
+SPDX-License-Identifier: curl
 Long: doh-url
 Arg: <URL>
 Help: Resolve host names over DoH
@@ -13,5 +15,8 @@ Some SSL options that you set for your transfer will apply to DoH since the
 name lookups take place over SSL. However, the certificate verification
 settings are not inherited and can be controlled separately via
 --doh-insecure and --doh-cert-status.
+
+This option is unset if an empty string "" is used as the URL. (Added in
+7.85.0)
 
 If this option is used several times, the last one will be used.

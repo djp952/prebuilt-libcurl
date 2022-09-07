@@ -19,10 +19,12 @@
 # This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
 # KIND, either express or implied.
 #
+# SPDX-License-Identifier: curl
+#
 ###########################################################################
 set -eo pipefail
 
-./buildconf
+autoreconf -fi
 
 if [ "$T" = "coverage" ]; then
   ./configure --enable-debug --disable-shared --disable-threaded-resolver --enable-code-coverage --enable-werror --with-libssh2
@@ -40,13 +42,6 @@ if [ "$T" = "torture" ]; then
   make
   tests="!TLS-SRP !FTP"
   make "TFLAGS=-n --shallow=20 -t $tests" test-nonflaky
-fi
-
-if [ "$T" = "events" ]; then
-  ./configure --enable-debug --disable-shared --disable-threaded-resolver --enable-code-coverage --enable-werror --with-libssh2 --with-openssl
-  make
-  tests="!TLS-SRP"
-  make "TFLAGS=-n -e $tests" test-nonflaky
 fi
 
 if [ "$T" = "debug" ]; then
@@ -88,14 +83,11 @@ if [ "$T" = "normal" ]; then
   fi
 fi
 
-if [ "$T" = "tidy" ]; then
-  ./configure --enable-warnings --enable-werror $C
-  make
-  make tidy
-fi
-
 if [ "$T" = "cmake" ]; then
-  cmake -H. -Bbuild -DCURL_WERROR=ON $C
+  mkdir -p build
+  cd ./build
+  cmake .. -DCURL_WERROR=ON $C
+  cd ..
   cmake --build build
   env TFLAGS="!1139 $TFLAGS" cmake --build build --target test-nonflaky
 fi

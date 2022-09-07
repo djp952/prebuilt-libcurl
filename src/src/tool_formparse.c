@@ -18,6 +18,8 @@
  * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
  * KIND, either express or implied.
  *
+ * SPDX-License-Identifier: curl
+ *
  ***************************************************************************/
 #include "tool_setup.h"
 
@@ -125,21 +127,20 @@ static struct tool_mime *tool_mime_new_filedata(struct tool_mime *parent,
     else {  /* Not suitable for direct use, buffer stdin data. */
       size_t stdinsize = 0;
 
-      if(file2memory(&data, &stdinsize, stdin) != PARAM_OK) {
-        /* Out of memory. */
+      switch(file2memory(&data, &stdinsize, stdin)) {
+      case PARAM_NO_MEM:
         return m;
-      }
-
-      if(ferror(stdin)) {
+      case PARAM_READ_ERROR:
         result = CURLE_READ_ERROR;
-        Curl_safefree(data);
-        data = NULL;
-      }
-      else if(!stdinsize) {
-        /* Zero-length data has been freed. Re-create it. */
-        data = strdup("");
-        if(!data)
-          return m;
+        break;
+      default:
+        if(!stdinsize) {
+          /* Zero-length data has been freed. Re-create it. */
+          data = strdup("");
+          if(!data)
+            return m;
+        }
+        break;
       }
       size = curlx_uztoso(stdinsize);
       origin = 0;
@@ -408,7 +409,7 @@ static int read_field_headers(struct OperationConfig *config,
   size_t pos = 0;
   bool incomment = FALSE;
   int lineno = 1;
-  char hdrbuf[999]; /* Max. header length + 1. */
+  char hdrbuf[999] = ""; /* Max. header length + 1. */
 
   for(;;) {
     int c = getc(fp);

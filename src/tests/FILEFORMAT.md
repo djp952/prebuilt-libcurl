@@ -1,3 +1,9 @@
+<!--
+Copyright (C) 1998 - 2022 Daniel Stenberg, <daniel@haxx.se>, et al.
+
+SPDX-License-Identifier: curl
+-->
+
 # curl test suite file format
 
 The curl test suite's file format is very simple and extensible, closely
@@ -56,7 +62,7 @@ For example, to insert the binary octets 0, 1 and 255 into the test file:
 ## Repeat content
 
 In the preprocess stage, a special instruction can be used to have runtests.pl
-generate a repetetive sequence of bytes.
+generate a repetitive sequence of bytes.
 
 To insert a sequence of repeat bytes, use this syntax to make the `<string>`
 get repeated `<number>` of times. The number has to be 1 or larger and the
@@ -79,7 +85,7 @@ outputs nothing, until a following else or endif clause. Like this:
     Accept-Encoding
     %endif
 
-It can also check for the inversed condition, so if the feature us *not* set by
+It can also check for the inverse condition, so if the feature is *not* set by
 the use of an exclamation mark:
 
     %if !brotli
@@ -128,6 +134,7 @@ Available substitute variables include:
 - `%HTTPTLS6PORT` - IPv6 port number of the HTTP TLS server
 - `%HTTPTLSPORT` - Port number of the HTTP TLS server
 - `%HTTPUNIXPATH` - Path to the Unix socket of the HTTP server
+- `%SOCKSUNIXPATH` - Absolute Path to the Unix socket of the SOCKS server
 - `%IMAP6PORT` - IPv6 port number of the IMAP server
 - `%IMAPPORT` - Port number of the IMAP server
 - `%MQTTPORT` - Port number of the MQTT server
@@ -315,7 +322,7 @@ about to issue.
   server will NOT wait for the full request body to get sent
 - `idle` - do nothing after receiving the request, just "sit idle"
 - `stream` - continuously send data to the client, never-ending
-- `writedelay: [secs]` delay this amount between reply packets
+- `writedelay: [msecs]` delay this amount between reply packets
 - `skip: [num]` - instructs the server to ignore reading this many bytes from
   a PUT or POST request
 - `rtp: part [num] channel [num] size [num]` - stream a fake RTP packet for
@@ -376,6 +383,7 @@ SKIPPED.
 Features testable here are:
 
 - `alt-svc`
+- `bearssl`
 - `c-ares`
 - `cookies`
 - `crypto`
@@ -384,6 +392,7 @@ Features testable here are:
 - `getrlimit`
 - `GnuTLS`
 - `GSS-API`
+- `h2c`
 - `HSTS`
 - `HTTP-auth`
 - `http/2`
@@ -395,7 +404,7 @@ Features testable here are:
 - `ld_preload`
 - `libssh2`
 - `libssh`
-- `oldlibssh` (versions before 0.9.6)
+- `oldlibssh` (versions before 0.9.4)
 - `libz`
 - `manual`
 - `Mime`

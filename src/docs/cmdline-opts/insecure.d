@@ -1,3 +1,5 @@
+c: Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
+SPDX-License-Identifier: curl
 Long: insecure
 Short: k
 Help: Allow insecure server connections
@@ -20,6 +22,6 @@ See this online resource for further details:
 
 For SFTP and SCP, this option makes curl skip the *known_hosts* verification.
 *known_hosts* is a file normally stored in the user's home directory in the
-\&.ssh subdirectory, which contains host names and their public keys.
+".ssh" subdirectory, which contains host names and their public keys.
 
 **WARNING**: using this option makes the transfer insecure.

@@ -1,3 +1,5 @@
+c: Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
+SPDX-License-Identifier: curl
 Long: proxy
 Short: x
 Arg: [protocol://]host[:port]
@@ -14,6 +16,9 @@ specified or http:// will be treated as HTTP proxy. Use socks4://, socks4a://,
 socks5:// or socks5h:// to request a specific SOCKS version to be used.
 (Added in 7.21.7)
 
+Unix domain sockets are supported for socks proxy. Set localhost for the host
+part. e.g. socks5h://localhost/path/to/socket.sock
+
 HTTPS proxy support via https:// protocol prefix was added in 7.52.0 for
 OpenSSL, GnuTLS and NSS.
 
@@ -25,7 +30,7 @@ If the port number is not specified in the proxy string, it is assumed to be
 
 This option overrides existing environment variables that set the proxy to
 use. If there's an environment variable setting a proxy, you can set proxy to
-\&"" to override it.
+"" to override it.
 
 All operations that are performed over an HTTP proxy will transparently be
 converted to HTTP. It means that certain protocol specific operations might

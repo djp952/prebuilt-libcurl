@@ -18,6 +18,8 @@
 .\" * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
 .\" * KIND, either express or implied.
 .\" *
+.\" * SPDX-License-Identifier: curl
+.\" *
 .\" **************************************************************************
 .TH curl_share_strerror 3 "Apr 26, 2004" "libcurl 7.12" "libcurl Manual"
 .SH NAME
@@ -31,7 +33,7 @@ The curl_share_strerror() function returns a string describing the CURLSHcode
 error code passed in the argument \fIerrornum\fP.
 .SH EXAMPLE
 .nf
-  CURLSHcode sh
+  CURLSHcode sh;
   share = curl_share_init();
   sh = curl_share_setopt(share, CURLSHOPT_SHARE, CURL_LOCK_DATA_CONNECT);
   if(sh)

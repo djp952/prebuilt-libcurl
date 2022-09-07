@@ -19,6 +19,8 @@
 # This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
 # KIND, either express or implied.
 #
+# SPDX-License-Identifier: curl
+#
 ###########################################################################
 
 my %filelevel= ('file' => 1,
@@ -248,22 +250,22 @@ sub appveyor {
             $job{'config'} = $1;
         }
         elsif($_ =~ /^        OPENSSL: (.*)/) {
-            $job{'openssl'} = $1 eq "ON" ? "true": "false";;
+            $job{'openssl'} = $1 eq "ON" ? "true": "false";
         }
         elsif($_ =~ /^        SCHANNEL: (.*)/) {
-            $job{'schannel'} = $1 eq "ON" ? "true": "false";;
+            $job{'schannel'} = $1 eq "ON" ? "true": "false";
         }
         elsif($_ =~ /^        ENABLE_UNICODE: (.*)/) {
-            $job{'unicode'} = $1 eq "ON" ? "true": "false";;
+            $job{'unicode'} = $1 eq "ON" ? "true": "false";
         }
         elsif($_ =~ /^        HTTP_ONLY: (.*)/) {
-            $job{'http-only'} = $1 eq "ON" ? "true": "false";;
+            $job{'http-only'} = $1 eq "ON" ? "true": "false";
         }
         elsif($_ =~ /^        TESTING: (.*)/) {
-            $job{'testing'} = $1 eq "ON" ? "true": "false";;
+            $job{'testing'} = $1 eq "ON" ? "true": "false";
         }
         elsif($_ =~ /^        SHARED: (.*)/) {
-            $job{'shared'} = $1 eq "ON" ? "true": "false";;
+            $job{'shared'} = $1 eq "ON" ? "true": "false";
         }
         elsif($_ =~ /^        TARGET: \"-A (.*)\"/) {
             $job{'target'} = $1;
@@ -495,7 +497,8 @@ sub zuul {
     return $c;
 }
 
-my $tag = "origin/master";
+my $tag = `git rev-parse --abbrev-ref HEAD 2>/dev/null` || "master";
+chomp $tag;
 githubactions($tag);
 azurepipelines($tag);
 appveyor($tag);

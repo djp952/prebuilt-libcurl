@@ -1,3 +1,5 @@
+c: Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
+SPDX-License-Identifier: curl
 Long: form
 Short: F
 Arg: <name=content>
@@ -32,7 +34,7 @@ be effectively read at transmission time; since the full size is unknown
 before the transfer starts, such data is sent as chunks by HTTP and rejected
 by IMAP.
 
-Example: send an image to an HTTP server, where \&'profile' is the name of the
+Example: send an image to an HTTP server, where 'profile' is the name of the
 form-field to which the file portrait.jpg will be the input:
 
  curl -F profile=@portrait.jpg https://example.com/upload.cgi

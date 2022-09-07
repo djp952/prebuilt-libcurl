@@ -18,6 +18,8 @@
 # This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
 # KIND, either express or implied.
 #
+# SPDX-License-Identifier: curl
+#
 ###########################################################################
 
 # View these jobs in the browser: https://app.circleci.com/pipelines/github/curl/curl
@@ -30,21 +32,21 @@ commands:
     steps:
       - run:
           command: |
-            ./buildconf
+            autoreconf -fi
             ./configure --enable-warnings --enable-werror --with-openssl
 
   configure-openssl-no-verbose:
     steps:
       - run:
           command: |
-            ./buildconf
+            autoreconf -fi
             ./configure --disable-verbose --enable-werror --with-openssl
 
   configure-no-proxy:
     steps:
       - run:
           command: |
-            ./buildconf
+            autoreconf -fi
             ./configure --disable-proxy --enable-werror --with-openssl
 
   install-cares:
@@ -69,7 +71,7 @@ commands:
     steps:
       - run:
           command: |
-            ./buildconf
+            autoreconf -fi
             ./configure --enable-warnings --enable-werror --with-openssl --with-libssh
 
   install-wolfssl:
@@ -98,21 +100,21 @@ commands:
     steps:
       - run:
           command: |
-            ./buildconf
+            autoreconf -fi
             ./configure --enable-warnings --enable-werror --with-openssl --enable-ares
 
   configure-wolfssh:
     steps:
       - run:
           command: |
-            ./buildconf
+            autoreconf -fi
             LDFLAGS="-Wl,-rpath,$HOME/wssh/lib" ./configure --enable-warnings --enable-werror --with-wolfssl=$HOME/wssl --with-wolfssh=$HOME/wssh
 
   configure-cares-debug:
     steps:
       - run:
           command: |
-            ./buildconf
+            autoreconf -fi
             ./configure --enable-debug --enable-werror --with-openssl --enable-ares
 
   build:

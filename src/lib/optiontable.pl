@@ -8,7 +8,7 @@ print <<HEAD
  *                            | (__| |_| |  _ <| |___
  *                             \___|\___/|_| \_\_____|
  *
- * Copyright (C) 1998 - 2021, Daniel Stenberg, <daniel@haxx.se>, et al.
+ * Copyright (C) 1998 - 2022, Daniel Stenberg, <daniel@haxx.se>, et al.
  *
  * This software is licensed as described in the file COPYING, which
  * you should have received as part of this distribution. The terms
@@ -20,6 +20,8 @@ print <<HEAD
  *
  * This software is distributed on an "AS IS" basis, WITHOUT WARRANTY OF ANY
  * KIND, either express or implied.
+ *
+ * SPDX-License-Identifier: curl
  *
  ***************************************************************************/
 
@@ -101,7 +103,7 @@ for my $name (sort @names) {
 }
 
 print <<FOOT
-  {NULL, CURLOPT_LASTENTRY, 0, 0} /* end of table */
+  {NULL, CURLOPT_LASTENTRY, CURLOT_LONG, 0} /* end of table */
 };
 
 #ifdef DEBUGBUILD
