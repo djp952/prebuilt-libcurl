@@ -27,10 +27,14 @@
 #ifdef HAVE_FCNTL_H
 #include <fcntl.h>
 #endif
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif
 
 #include <curl/curl.h>
 #include "vtls/vtls.h"
 #include "sendf.h"
+#include "timeval.h"
 #include "rand.h"
 
 /* The last 3 #include files should be in this order */
@@ -212,7 +216,7 @@ CURLcode Curl_rand(struct Curl_easy *data, unsigned char *rnd, size_t num)
 
 /*
  * Curl_rand_hex() fills the 'rnd' buffer with a given 'num' size with random
- * hexadecimal digits PLUS a zero terminating byte. It must be an odd number
+ * hexadecimal digits PLUS a null-terminating byte. It must be an odd number
  * size.
  */
 
@@ -235,7 +239,7 @@ CURLcode Curl_rand_hex(struct Curl_easy *data, unsigned char *rnd,
     /* make sure it fits in the local buffer and that it is an odd number! */
     return CURLE_BAD_FUNCTION_ARGUMENT;
 
-  num--; /* save one for zero termination */
+  num--; /* save one for null-termination */
 
   result = Curl_rand(data, buffer, num/2);
   if(result)

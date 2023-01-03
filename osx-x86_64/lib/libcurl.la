@@ -14,7 +14,7 @@ library_names=''
 old_library='libcurl.a'
 
 # Linker flags that cannot go in dependency_libs.
-inherited_linker_flags='  -framework CoreFoundation -framework SystemConfiguration -pthread'
+inherited_linker_flags='  -framework Security -framework CoreFoundation -framework SystemConfiguration -pthread'
 
 # Libraries that this one depends upon.
 dependency_libs=' -L/home/djp952/prebuilt-libz/osx-x86_64/lib -L/home/djp952/prebuilt-libwolfssl/osx-x86_64/lib /home/djp952/wolfssl/out/lib/libwolfssl.la -lnetwork -lpthread -lz -lm -ldl'

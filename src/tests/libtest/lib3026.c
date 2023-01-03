@@ -29,7 +29,12 @@
 #define NUM_THREADS 100
 
 #ifdef WIN32
+#ifdef _WIN32_WCE
 static DWORD WINAPI run_thread(LPVOID ptr)
+#else
+#include <process.h>
+static unsigned int WINAPI run_thread(void *ptr)
+#endif
 {
   CURLcode *result = ptr;
 
@@ -42,8 +47,15 @@ static DWORD WINAPI run_thread(LPVOID ptr)
 
 int test(char *URL)
 {
+#ifdef _WIN32_WCE
+  typedef HANDLE curl_win_thread_handle_t;
+#elif defined(__MINGW32__) && !defined(__MINGW64_VERSION_MAJOR)
+  typedef unsigned long curl_win_thread_handle_t;
+#else
+  typedef uintptr_t curl_win_thread_handle_t;
+#endif
   CURLcode results[NUM_THREADS];
-  HANDLE ths[NUM_THREADS];
+  curl_win_thread_handle_t ths[NUM_THREADS];
   unsigned tid_count = NUM_THREADS, i;
   int test_failure = 0;
   curl_version_info_data *ver;
@@ -57,10 +69,22 @@ int test(char *URL)
     return -1;
   }
 
+  /* On Windows libcurl global init/cleanup calls LoadLibrary/FreeLibrary for
+     secur32.dll and iphlpapi.dll. Here we load them beforehand so that when
+     libcurl calls LoadLibrary/FreeLibrary it only increases/decreases the
+     library's refcount rather than actually loading/unloading the library,
+     which would affect the test runtime. */
+  (void)win32_load_system_library(TEXT("secur32.dll"));
+  (void)win32_load_system_library(TEXT("iphlpapi.dll"));
+
   for(i = 0; i < tid_count; i++) {
-    HANDLE th;
+    curl_win_thread_handle_t th;
     results[i] = CURL_LAST; /* initialize with invalid value */
+#ifdef _WIN32_WCE
     th = CreateThread(NULL, 0, run_thread, &results[i], 0, NULL);
+#else
+    th = _beginthreadex(NULL, 0, run_thread, &results[i], 0, NULL);
+#endif
     if(!th) {
       fprintf(stderr, "%s:%d Couldn't create thread, errno %d\n",
               __FILE__, __LINE__, GetLastError());
@@ -73,8 +97,8 @@ int test(char *URL)
 
 cleanup:
   for(i = 0; i < tid_count; i++) {
-    WaitForSingleObject(ths[i], INFINITE);
-    CloseHandle(ths[i]);
+    WaitForSingleObject((HANDLE)ths[i], INFINITE);
+    CloseHandle((HANDLE)ths[i]);
     if(results[i] != CURLE_OK) {
       fprintf(stderr, "%s:%d thread[%u]: curl_global_init() failed,"
               "with code %d (%s)\n", __FILE__, __LINE__,

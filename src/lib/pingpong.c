@@ -28,6 +28,7 @@
 #include "curl_setup.h"
 
 #include "urldata.h"
+#include "cfilters.h"
 #include "sendf.h"
 #include "select.h"
 #include "progress.h"
@@ -102,12 +103,12 @@ CURLcode Curl_pp_statemach(struct Curl_easy *data,
   else
     interval_ms = 0; /* immediate */
 
-  if(Curl_ssl_data_pending(conn, FIRSTSOCKET))
+  if(Curl_conn_data_pending(data, FIRSTSOCKET))
     rc = 1;
   else if(Curl_pp_moredata(pp))
     /* We are receiving and there is data in the cache so just read it */
     rc = 1;
-  else if(!pp->sendleft && Curl_ssl_data_pending(conn, FIRSTSOCKET))
+  else if(!pp->sendleft && Curl_conn_data_pending(data, FIRSTSOCKET))
     /* We are receiving and there is data ready in the SSL library */
     rc = 1;
   else
@@ -330,7 +331,7 @@ CURLcode Curl_pp_readresp(struct Curl_easy *data,
     else if(gotbytes <= 0) {
       keepon = FALSE;
       result = CURLE_RECV_ERROR;
-      failf(data, "response reading failed");
+      failf(data, "response reading failed (errno: %d)", SOCKERRNO);
     }
     else {
       /* we got a whole chunk of data, which can be anything from one

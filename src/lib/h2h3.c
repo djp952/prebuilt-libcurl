@@ -36,7 +36,7 @@
 
 /*
  * Curl_pseudo_headers() creates the array with pseudo headers to be
- * used in a HTTP/2 or HTTP/3 request.
+ * used in an HTTP/2 or HTTP/3 request.
  */
 
 #if defined(USE_NGHTTP2) || defined(ENABLE_QUIC)
@@ -191,7 +191,7 @@ CURLcode Curl_pseudo_headers(struct Curl_easy *data,
   vptr = Curl_checkheaders(data, STRCONST(H2H3_PSEUDO_SCHEME));
   if(vptr) {
     vptr += sizeof(H2H3_PSEUDO_SCHEME);
-    while(*vptr && ISSPACE(*vptr))
+    while(*vptr && ISBLANK(*vptr))
       vptr++;
     nva[2].value = vptr;
     infof(data, "set pseudo header %s to %s", H2H3_PSEUDO_SCHEME, vptr);

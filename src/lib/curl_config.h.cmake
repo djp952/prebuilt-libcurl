@@ -23,9 +23,6 @@
  ***************************************************************************/
 /* lib/curl_config.h.in.  Generated somehow by cmake.  */
 
-/* when building libcurl itself */
-#cmakedefine BUILDING_LIBCURL 1
-
 /* Location of default ca bundle */
 #cmakedefine CURL_CA_BUNDLE "${CURL_CA_BUNDLE}"
 
@@ -153,9 +150,6 @@
 /* Define to 1 if you have the <arpa/tftp.h> header file. */
 #cmakedefine HAVE_ARPA_TFTP_H 1
 
-/* Define to 1 if you have the <assert.h> header file. */
-#cmakedefine HAVE_ASSERT_H 1
-
 /* Define to 1 if you have _Atomic support. */
 #cmakedefine HAVE_ATOMIC 1
 
@@ -177,9 +171,6 @@
 /* Define to 1 if you have the `closesocket' function. */
 #cmakedefine HAVE_CLOSESOCKET 1
 
-/* Define to 1 if you have the <errno.h> header file. */
-#cmakedefine HAVE_ERRNO_H 1
-
 /* Define to 1 if you have the fcntl function. */
 #cmakedefine HAVE_FCNTL 1
 
@@ -197,6 +188,9 @@
 
 /* Define to 1 if you have a working getaddrinfo function. */
 #cmakedefine HAVE_GETADDRINFO 1
+
+/* Define to 1 if the getaddrinfo function is threadsafe. */
+#cmakedefine HAVE_GETADDRINFO_THREADSAFE 1
 
 /* Define to 1 if you have the `geteuid' function. */
 #cmakedefine HAVE_GETEUID 1
@@ -346,20 +340,8 @@
 /* Define to 1 if you have the `socket' library (-lsocket). */
 #cmakedefine HAVE_LIBSOCKET 1
 
-/* Define to 1 if you have the `psl' library (-lpsl). */
-#cmakedefine HAVE_LIBPSL 1
-
-/* Define to 1 if you have the <libpsl.h> header file. */
-#cmakedefine HAVE_LIBPSL_H 1
-
 /* Define to 1 if you have the `ssh2' library (-lssh2). */
 #cmakedefine HAVE_LIBSSH2 1
-
-/* Define to 1 if you have the <libssh2.h> header file. */
-#cmakedefine HAVE_LIBSSH2_H 1
-
-/* Define to 1 if you have the <libssh/libssh.h> header file. */
-#cmakedefine HAVE_LIBSSH_LIBSSH_H 1
 
 /* if zlib is available */
 #cmakedefine HAVE_LIBZ 1
@@ -471,6 +453,9 @@
 
 /* Define to 1 if you have the `socket' function. */
 #cmakedefine HAVE_SOCKET 1
+
+/* Define to 1 if you have the socketpair function. */
+#cmakedefine HAVE_SOCKETPAIR 1
 
 /* Define to 1 if you have the <ssl.h> header file. */
 #cmakedefine HAVE_SSL_H 1
@@ -604,12 +589,6 @@
 /* Define to 1 if you have the ws2tcpip.h header file. */
 #cmakedefine HAVE_WS2TCPIP_H 1
 
-/* Define if you have the <process.h> header file. */
-#cmakedefine HAVE_PROCESS_H 1
-
-/* if you have the zlib.h header file */
-#cmakedefine HAVE_ZLIB_H 1
-
 /* Define to 1 if you need the lber.h header file even with ldap.h */
 #cmakedefine NEED_LBER_H 1
 
@@ -642,54 +621,6 @@
 
 /* a suitable file to read random data from */
 #cmakedefine RANDOM_FILE "${RANDOM_FILE}"
-
-/* Define to the type of arg 1 for recv. */
-#cmakedefine RECV_TYPE_ARG1 ${RECV_TYPE_ARG1}
-
-/* Define to the type of arg 2 for recv. */
-#cmakedefine RECV_TYPE_ARG2 ${RECV_TYPE_ARG2}
-
-/* Define to the type of arg 3 for recv. */
-#cmakedefine RECV_TYPE_ARG3 ${RECV_TYPE_ARG3}
-
-/* Define to the type of arg 4 for recv. */
-#cmakedefine RECV_TYPE_ARG4 ${RECV_TYPE_ARG4}
-
-/* Define to the function return type for recv. */
-#cmakedefine RECV_TYPE_RETV ${RECV_TYPE_RETV}
-
-/* Define to the type qualifier of arg 5 for select. */
-#cmakedefine SELECT_QUAL_ARG5 ${SELECT_QUAL_ARG5}
-
-/* Define to the type of arg 1 for select. */
-#cmakedefine SELECT_TYPE_ARG1 ${SELECT_TYPE_ARG1}
-
-/* Define to the type of args 2, 3 and 4 for select. */
-#cmakedefine SELECT_TYPE_ARG234 ${SELECT_TYPE_ARG234}
-
-/* Define to the type of arg 5 for select. */
-#cmakedefine SELECT_TYPE_ARG5 ${SELECT_TYPE_ARG5}
-
-/* Define to the function return type for select. */
-#cmakedefine SELECT_TYPE_RETV ${SELECT_TYPE_RETV}
-
-/* Define to the type qualifier of arg 2 for send. */
-#cmakedefine SEND_QUAL_ARG2 ${SEND_QUAL_ARG2}
-
-/* Define to the type of arg 1 for send. */
-#cmakedefine SEND_TYPE_ARG1 ${SEND_TYPE_ARG1}
-
-/* Define to the type of arg 2 for send. */
-#cmakedefine SEND_TYPE_ARG2 ${SEND_TYPE_ARG2}
-
-/* Define to the type of arg 3 for send. */
-#cmakedefine SEND_TYPE_ARG3 ${SEND_TYPE_ARG3}
-
-/* Define to the type of arg 4 for send. */
-#cmakedefine SEND_TYPE_ARG4 ${SEND_TYPE_ARG4}
-
-/* Define to the function return type for send. */
-#cmakedefine SEND_TYPE_RETV ${SEND_TYPE_RETV}
 
 /*
  Note: SIZEOF_* variables are fetched with CMake through check_type_size().
@@ -850,5 +781,5 @@ ${SIZEOF_TIME_T_CODE}
 /* to enable Windows IDN */
 #cmakedefine USE_WIN32_IDN 1
 
-/* to make the compiler know the prototypes of Windows IDN APIs */
-#cmakedefine WANT_IDN_PROTOTYPES 1
+/* Define to 1 to enable websocket support. */
+#cmakedefine USE_WEBSOCKETS 1

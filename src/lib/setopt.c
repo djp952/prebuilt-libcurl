@@ -148,81 +148,36 @@ static CURLcode setstropt_userpwd(char *option, char **userp, char **passwdp)
 #define C_SSLVERSION_VALUE(x) (x & 0xffff)
 #define C_SSLVERSION_MAX_VALUE(x) (x & 0xffff0000)
 
-static CURLcode protocol2num(char *str, curl_off_t *val)
+static CURLcode protocol2num(const char *str, curl_prot_t *val)
 {
-  bool found_comma = FALSE;
-  static struct scheme {
-    const char *name;
-    long bit;
-  } const protos[] = {
-    { "dict", CURLPROTO_DICT },
-    { "file", CURLPROTO_FILE },
-    { "ftp", CURLPROTO_FTP },
-    { "ftps", CURLPROTO_FTPS },
-    { "gopher", CURLPROTO_GOPHER },
-    { "gophers", CURLPROTO_GOPHERS },
-    { "http", CURLPROTO_HTTP },
-    { "https", CURLPROTO_HTTPS },
-    { "imap", CURLPROTO_IMAP },
-    { "imaps", CURLPROTO_IMAPS },
-    { "ldap", CURLPROTO_LDAP },
-    { "ldaps", CURLPROTO_LDAPS },
-    { "mqtt", CURLPROTO_MQTT },
-    { "pop3", CURLPROTO_POP3 },
-    { "pop3s", CURLPROTO_POP3S },
-    { "rtmp", CURLPROTO_RTMP },
-    { "rtmpe", CURLPROTO_RTMPE },
-    { "rtmps", CURLPROTO_RTMPS },
-    { "rtmpt", CURLPROTO_RTMPT },
-    { "rtmpte", CURLPROTO_RTMPTE },
-    { "rtmpts", CURLPROTO_RTMPTS },
-    { "rtsp", CURLPROTO_RTSP },
-    { "scp", CURLPROTO_SCP },
-    { "sftp", CURLPROTO_SFTP },
-    { "smb", CURLPROTO_SMB },
-    { "smbs", CURLPROTO_SMBS },
-    { "smtp", CURLPROTO_SMTP },
-    { "smtps", CURLPROTO_SMTPS },
-    { "telnet", CURLPROTO_TELNET },
-    { "tftp", CURLPROTO_TFTP },
-    { NULL, 0 }
-  };
-
   if(!str)
     return CURLE_BAD_FUNCTION_ARGUMENT;
-  else if(curl_strequal(str, "all")) {
-    *val = ~0;
+
+  if(curl_strequal(str, "all")) {
+    *val = ~(curl_prot_t) 0;
     return CURLE_OK;
   }
 
   *val = 0;
 
   do {
+    const char *token = str;
     size_t tlen;
-    struct scheme const *pp;
-    char *token;
-    token = strchr(str, ',');
-    found_comma = token ? TRUE : FALSE;
-    if(!token)
-      token = strchr(str, '\0');
-    tlen = token - str;
+
+    str = strchr(str, ',');
+    tlen = str? (size_t) (str - token): strlen(token);
     if(tlen) {
-      for(pp = protos; pp->name; pp++) {
-        if((strlen(pp->name) == tlen) &&
-           curl_strnequal(str, pp->name, tlen)) {
-          *val |= pp->bit;
-          break;
-        }
-      }
-      if(!(pp->name))
-        /* protocol name didn't match */
-        return CURLE_BAD_FUNCTION_ARGUMENT;
+      const struct Curl_handler *h = Curl_builtin_scheme(token, tlen);
+
+      if(!h)
+        return CURLE_UNSUPPORTED_PROTOCOL;
+
+      *val |= h->protocol;
     }
-    if(found_comma)
-      str = token + 1;
-  } while(found_comma);
+  } while(str++);
+
   if(!*val)
-    /* no matching protocol */
+    /* no protocol listed */
     return CURLE_BAD_FUNCTION_ARGUMENT;
   return CURLE_OK;
 }
@@ -249,6 +204,15 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 
     data->set.dns_cache_timeout = (int)arg;
     break;
+  case CURLOPT_CA_CACHE_TIMEOUT:
+    arg = va_arg(param, long);
+    if(arg < -1)
+      return CURLE_BAD_FUNCTION_ARGUMENT;
+    else if(arg > INT_MAX)
+      arg = INT_MAX;
+
+    data->set.general_ssl.ca_cache_timeout = (int)arg;
+    break;
   case CURLOPT_DNS_USE_GLOBAL_CACHE:
     /* deprecated */
     break;
@@ -265,7 +229,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     break;
 #endif
   case CURLOPT_TLS13_CIPHERS:
-    if(Curl_ssl_tls13_ciphersuites()) {
+    if(Curl_ssl_supports(data, SSLSUPP_TLS13_CIPHERSUITES)) {
       /* set preferred list of TLS 1.3 cipher suites */
       result = Curl_setstropt(&data->set.str[STRING_SSL_CIPHER13_LIST],
                               va_arg(param, char *));
@@ -275,7 +239,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     break;
 #ifndef CURL_DISABLE_PROXY
   case CURLOPT_PROXY_TLS13_CIPHERS:
-    if(Curl_ssl_tls13_ciphersuites()) {
+    if(Curl_ssl_supports(data, SSLSUPP_TLS13_CIPHERSUITES)) {
       /* set preferred list of TLS 1.3 cipher suites for proxy */
       result = Curl_setstropt(&data->set.str[STRING_SSL_CIPHER13_LIST_PROXY],
                               va_arg(param, char *));
@@ -451,7 +415,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     arg = va_arg(param, long);
     if((arg < CURL_TIMECOND_NONE) || (arg >= CURL_TIMECOND_LAST))
       return CURLE_BAD_FUNCTION_ARGUMENT;
-    data->set.timecondition = (curl_TimeCond)arg;
+    data->set.timecondition = (unsigned char)(curl_TimeCond)arg;
     break;
   case CURLOPT_TIMEVALUE:
     /*
@@ -643,7 +607,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 
   case CURLOPT_FOLLOWLOCATION:
     /*
-     * Follow Location: header hints on a HTTP-server.
+     * Follow Location: header hints on an HTTP-server.
      */
     data->set.http_follow_location = (0 != va_arg(param, long)) ? TRUE : FALSE;
     break;
@@ -696,8 +660,10 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     }
     else
       data->set.method = HTTPREQ_GET;
+    data->set.upload = FALSE;
     break;
 
+#ifndef CURL_DISABLE_MIME
   case CURLOPT_HTTPPOST:
     /*
      * Set to make us do HTTP POST
@@ -706,6 +672,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     data->set.method = HTTPREQ_POST_FORM;
     data->set.opt_no_body = FALSE; /* this is implied */
     break;
+#endif
 
   case CURLOPT_AWS_SIGV4:
     /*
@@ -719,18 +686,6 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      */
     if(data->set.str[STRING_AWS_SIGV4])
       data->set.httpauth = CURLAUTH_AWS_SIGV4;
-    break;
-
-  case CURLOPT_MIMEPOST:
-    /*
-     * Set to make us do MIME/form POST
-     */
-    result = Curl_mime_set_subparts(&data->set.mimepost,
-                                    va_arg(param, curl_mime *), FALSE);
-    if(!result) {
-      data->set.method = HTTPREQ_POST_MIME;
-      data->set.opt_no_body = FALSE; /* this is implied */
-    }
     break;
 
   case CURLOPT_REFERER:
@@ -752,13 +707,6 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      */
     result = Curl_setstropt(&data->set.str[STRING_USERAGENT],
                             va_arg(param, char *));
-    break;
-
-  case CURLOPT_HTTPHEADER:
-    /*
-     * Set a list with HTTP headers to use (or replace internals with)
-     */
-    data->set.headers = va_arg(param, struct curl_slist *);
     break;
 
 #ifndef CURL_DISABLE_PROXY
@@ -975,7 +923,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 
   case CURLOPT_EXPECT_100_TIMEOUT_MS:
     /*
-     * Time to wait for a response to a HTTP request containing an
+     * Time to wait for a response to an HTTP request containing an
      * Expect: 100-continue header before sending the data anyway.
      */
     arg = va_arg(param, long);
@@ -997,6 +945,36 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 #endif
     break;
 #endif   /* CURL_DISABLE_HTTP */
+
+#if !defined(CURL_DISABLE_HTTP) || !defined(CURL_DISABLE_SMTP) ||       \
+    !defined(CURL_DISABLE_IMAP)
+# if !defined(CURL_DISABLE_HTTP) || !defined(CURL_DISABLE_MIME)
+  case CURLOPT_HTTPHEADER:
+    /*
+     * Set a list with HTTP headers to use (or replace internals with)
+     */
+    data->set.headers = va_arg(param, struct curl_slist *);
+    break;
+# endif
+
+# ifndef CURL_DISABLE_MIME
+  case CURLOPT_MIMEPOST:
+    /*
+     * Set to make us do MIME POST
+     */
+    result = Curl_mime_set_subparts(&data->set.mimepost,
+                                    va_arg(param, curl_mime *), FALSE);
+    if(!result) {
+      data->set.method = HTTPREQ_POST_MIME;
+      data->set.opt_no_body = FALSE; /* this is implied */
+    }
+    break;
+
+  case CURLOPT_MIME_OPTIONS:
+    data->set.mime_options = (unsigned int)va_arg(param, long);
+    break;
+# endif
+#endif
 
   case CURLOPT_HTTPAUTH:
     /*
@@ -1079,7 +1057,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     arg = va_arg(param, long);
     if((arg < 0) || (arg > 65535))
       return CURLE_BAD_FUNCTION_ARGUMENT;
-    data->set.proxyport = arg;
+    data->set.proxyport = (unsigned short)arg;
     break;
 
   case CURLOPT_PROXYAUTH:
@@ -1166,7 +1144,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     arg = va_arg(param, long);
     if((arg < CURLPROXY_HTTP) || (arg > CURLPROXY_SOCKS5_HOSTNAME))
       return CURLE_BAD_FUNCTION_ARGUMENT;
-    data->set.proxytype = (curl_proxytype)arg;
+    data->set.proxytype = (unsigned char)(curl_proxytype)arg;
     break;
 
   case CURLOPT_PROXY_TRANSFER_MODE:
@@ -1188,7 +1166,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     break;
 
   case CURLOPT_SOCKS5_AUTH:
-    data->set.socks5auth = va_arg(param, unsigned long);
+    data->set.socks5auth = (unsigned char)va_arg(param, unsigned long);
     if(data->set.socks5auth & ~(CURLAUTH_BASIC | CURLAUTH_GSSAPI))
       result = CURLE_NOT_BUILT_IN;
     break;
@@ -1265,7 +1243,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     arg = va_arg(param, long);
     if((arg < CURLFTPMETHOD_DEFAULT) || (arg >= CURLFTPMETHOD_LAST))
       return CURLE_BAD_FUNCTION_ARGUMENT;
-    data->set.ftp_filemethod = (curl_ftpfile)arg;
+    data->set.ftp_filemethod = (unsigned char)(curl_ftpfile)arg;
     break;
   case CURLOPT_FTPPORT:
     /*
@@ -1292,7 +1270,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     arg = va_arg(param, long);
     if((arg < CURLFTPSSL_CCC_NONE) || (arg >= CURLFTPSSL_CCC_LAST))
       return CURLE_BAD_FUNCTION_ARGUMENT;
-    data->set.ftp_ccc = (curl_ftpccc)arg;
+    data->set.ftp_ccc = (unsigned char)(curl_ftpccc)arg;
     break;
 
   case CURLOPT_FTP_SKIP_PASV_IP:
@@ -1320,7 +1298,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     arg = va_arg(param, long);
     if((arg < CURLFTPAUTH_DEFAULT) || (arg >= CURLFTPAUTH_LAST))
       return CURLE_BAD_FUNCTION_ARGUMENT;
-    data->set.ftpsslauth = (curl_ftpauth)arg;
+    data->set.ftpsslauth = (unsigned char)(curl_ftpauth)arg;
     break;
   case CURLOPT_KRBLEVEL:
     /*
@@ -2023,7 +2001,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      * Set a SSL_CTX callback
      */
 #ifdef USE_SSL
-    if(Curl_ssl->supports & SSLSUPP_SSL_CTX)
+    if(Curl_ssl_supports(data, SSLSUPP_SSL_CTX))
       data->set.ssl.fsslctx = va_arg(param, curl_ssl_ctx_callback);
     else
 #endif
@@ -2034,7 +2012,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      * Set a SSL_CTX callback parameter pointer
      */
 #ifdef USE_SSL
-    if(Curl_ssl->supports & SSLSUPP_SSL_CTX)
+    if(Curl_ssl_supports(data, SSLSUPP_SSL_CTX))
       data->set.ssl.fsslctxp = va_arg(param, void *);
     else
 #endif
@@ -2044,7 +2022,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     /*
      * Enable TLS false start.
      */
-    if(!Curl_ssl_false_start()) {
+    if(!Curl_ssl_false_start(data)) {
       result = CURLE_NOT_BUILT_IN;
       break;
     }
@@ -2053,7 +2031,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     break;
   case CURLOPT_CERTINFO:
 #ifdef USE_SSL
-    if(Curl_ssl->supports & SSLSUPP_CERTINFO)
+    if(Curl_ssl_supports(data, SSLSUPP_CERTINFO))
       data->set.ssl.certinfo = (0 != va_arg(param, long)) ? TRUE : FALSE;
     else
 #endif
@@ -2065,7 +2043,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      * Specify file name of the public key in DER format.
      */
 #ifdef USE_SSL
-    if(Curl_ssl->supports & SSLSUPP_PINNEDPUBKEY)
+    if(Curl_ssl_supports(data, SSLSUPP_PINNEDPUBKEY))
       result = Curl_setstropt(&data->set.str[STRING_SSL_PINNEDPUBLICKEY],
                               va_arg(param, char *));
     else
@@ -2079,7 +2057,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      * Specify file name of the public key in DER format.
      */
 #ifdef USE_SSL
-    if(Curl_ssl->supports & SSLSUPP_PINNEDPUBKEY)
+    if(Curl_ssl_supports(data, SSLSUPP_PINNEDPUBKEY))
       result = Curl_setstropt(&data->set.str[STRING_SSL_PINNEDPUBLICKEY_PROXY],
                               va_arg(param, char *));
     else
@@ -2100,7 +2078,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      * Specify entire PEM of the CA certificate
      */
 #ifdef USE_SSL
-    if(Curl_ssl->supports & SSLSUPP_CAINFO_BLOB)
+    if(Curl_ssl_supports(data, SSLSUPP_CAINFO_BLOB))
       result = Curl_setblobopt(&data->set.blobs[BLOB_CAINFO],
                                va_arg(param, struct curl_blob *));
     else
@@ -2123,7 +2101,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      * Specify entire PEM of the CA certificate
      */
 #ifdef USE_SSL
-    if(Curl_ssl->supports & SSLSUPP_CAINFO_BLOB)
+    if(Curl_ssl_supports(data, SSLSUPP_CAINFO_BLOB))
       result = Curl_setblobopt(&data->set.blobs[BLOB_CAINFO_PROXY],
                                va_arg(param, struct curl_blob *));
     else
@@ -2137,7 +2115,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      * certificates which have been prepared using openssl c_rehash utility.
      */
 #ifdef USE_SSL
-    if(Curl_ssl->supports & SSLSUPP_CA_PATH)
+    if(Curl_ssl_supports(data, SSLSUPP_CA_PATH))
       /* This does not work on windows. */
       result = Curl_setstropt(&data->set.str[STRING_SSL_CAPATH],
                               va_arg(param, char *));
@@ -2152,7 +2130,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
      * CA certificates which have been prepared using openssl c_rehash utility.
      */
 #ifdef USE_SSL
-    if(Curl_ssl->supports & SSLSUPP_CA_PATH)
+    if(Curl_ssl_supports(data, SSLSUPP_CA_PATH))
       /* This does not work on windows. */
       result = Curl_setstropt(&data->set.str[STRING_SSL_CAPATH_PROXY],
                               va_arg(param, char *));
@@ -2236,7 +2214,7 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     else if(arg < READBUFFER_MIN)
       arg = READBUFFER_MIN;
 
-    data->set.buffer_size = (int)arg;
+    data->set.buffer_size = (unsigned int)arg;
     break;
 
   case CURLOPT_UPLOAD_BUFFERSIZE:
@@ -2430,9 +2408,14 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 
   case CURLOPT_CONNECT_ONLY:
     /*
-     * No data transfer, set up connection and let application use the socket
+     * No data transfer.
+     * (1) - only do connection
+     * (2) - do first get request but get no content
      */
-    data->set.connect_only = (0 != va_arg(param, long)) ? TRUE : FALSE;
+    arg = va_arg(param, long);
+    if(arg > 2)
+      return CURLE_BAD_FUNCTION_ARGUMENT;
+    data->set.connect_only = (unsigned char)arg;
     break;
 
   case CURLOPT_SOCKOPTFUNCTION:
@@ -2640,31 +2623,35 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
        transfer, which thus helps the app which takes URLs from users or other
        external inputs and want to restrict what protocol(s) to deal
        with. Defaults to CURLPROTO_ALL. */
-    data->set.allowed_protocols = (curl_off_t)va_arg(param, long);
+    data->set.allowed_protocols = (curl_prot_t)va_arg(param, long);
     break;
 
   case CURLOPT_REDIR_PROTOCOLS:
     /* set the bitmask for the protocols that libcurl is allowed to follow to,
        as a subset of the CURLOPT_PROTOCOLS ones. That means the protocol needs
        to be set in both bitmasks to be allowed to get redirected to. */
-    data->set.redir_protocols = (curl_off_t)va_arg(param, long);
+    data->set.redir_protocols = (curl_prot_t)va_arg(param, long);
     break;
 
-  case CURLOPT_PROTOCOLS_STR:
+  case CURLOPT_PROTOCOLS_STR: {
+    curl_prot_t prot;
     argptr = va_arg(param, char *);
-    result = protocol2num(argptr, &bigsize);
+    result = protocol2num(argptr, &prot);
     if(result)
       return result;
-    data->set.allowed_protocols = bigsize;
+    data->set.allowed_protocols = prot;
     break;
+  }
 
-  case CURLOPT_REDIR_PROTOCOLS_STR:
+  case CURLOPT_REDIR_PROTOCOLS_STR: {
+    curl_prot_t prot;
     argptr = va_arg(param, char *);
-    result = protocol2num(argptr, &bigsize);
+    result = protocol2num(argptr, &prot);
     if(result)
       return result;
-    data->set.redir_protocols = bigsize;
+    data->set.redir_protocols = prot;
     break;
+  }
 
   case CURLOPT_DEFAULT_PROTOCOL:
     /* Set the protocol to use when the URL doesn't include any protocol */
@@ -2691,13 +2678,6 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
   case CURLOPT_MAIL_RCPT_ALLLOWFAILS:
     /* allow RCPT TO command to fail for some recipients */
     data->set.mail_rcpt_allowfails = (0 != va_arg(param, long)) ? TRUE : FALSE;
-    break;
-#endif
-
-#if (!defined(CURL_DISABLE_HTTP) && !defined(CURL_DISABLE_MIME)) || \
-  !defined(CURL_DISABLE_SMTP) || !defined(CURL_DISABLE_IMAP)
-  case CURLOPT_MIME_OPTIONS:
-    data->set.mime_options = (unsigned int)va_arg(param, long);
     break;
 #endif
 
@@ -2952,7 +2932,6 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
 #endif
     break;
   case CURLOPT_SSL_ENABLE_NPN:
-    data->set.ssl_enable_npn = (0 != va_arg(param, long)) ? TRUE : FALSE;
     break;
   case CURLOPT_SSL_ENABLE_ALPN:
     data->set.ssl_enable_alpn = (0 != va_arg(param, long)) ? TRUE : FALSE;
@@ -3127,6 +3106,18 @@ CURLcode Curl_vsetopt(struct Curl_easy *data, CURLoption option, va_list param)
     break;
   case CURLOPT_PREREQDATA:
     data->set.prereq_userp = va_arg(param, void *);
+    break;
+#ifdef USE_WEBSOCKETS
+  case CURLOPT_WS_OPTIONS: {
+    bool raw;
+    arg = va_arg(param, long);
+    raw = (arg & CURLWS_RAW_MODE);
+    data->set.ws_raw_mode = raw;
+    break;
+  }
+#endif
+  case CURLOPT_QUICK_EXIT:
+    data->set.quick_exit = (0 != va_arg(param, long)) ? 1L:0L;
     break;
   default:
     /* unknown tag and its companion, just ignore: */

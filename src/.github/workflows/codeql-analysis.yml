@@ -5,8 +5,6 @@
 name: CodeQL
 
 on:
-  # Trigger the workflow on push or pull requests, but only for the
-  # master branch
   push:
     branches:
     - master
@@ -17,12 +15,16 @@ on:
   schedule:
     - cron: '0 0 * * 4'
 
-permissions:
-  security-events: write
+concurrency:
+  group: ${{ github.workflow }}
+
+permissions: {}
 
 jobs:
   codeql:
     runs-on: ubuntu-latest
+    permissions:
+      security-events: write
     steps:
     - name: Checkout repository
       uses: actions/checkout@v3

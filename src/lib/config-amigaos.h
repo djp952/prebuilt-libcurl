@@ -32,11 +32,9 @@
 
 #define HAVE_ARPA_INET_H 1
 #define HAVE_CLOSESOCKET_CAMEL 1
-#define HAVE_ERRNO_H 1
 #define HAVE_INTTYPES_H 1
 #define HAVE_IOCTLSOCKET_CAMEL 1
 #define HAVE_IOCTLSOCKET_CAMEL_FIONBIO 1
-#define HAVE_LIBZ 1
 #define HAVE_LONGLONG 1
 #define HAVE_NETDB_H 1
 #define HAVE_NETINET_IN_H 1
@@ -65,7 +63,6 @@
 #define HAVE_UTIME 1
 #define HAVE_UTIME_H 1
 #define HAVE_WRITABLE_ARGV 1
-#define HAVE_ZLIB_H 1
 #define HAVE_SYS_IOCTL_H 1
 
 #define NEED_MALLOC_H 1
@@ -73,11 +70,16 @@
 #define SIZEOF_INT 4
 #define SIZEOF_SIZE_T 4
 
+#ifndef SIZEOF_CURL_OFF_T
+#define SIZEOF_CURL_OFF_T 8
+#endif
+
 #define USE_MANUAL 1
-#define USE_OPENSSL 1
 #define CURL_DISABLE_LDAP 1
 
+#ifndef OS
 #define OS "AmigaOS"
+#endif
 
 #define PACKAGE "curl"
 #define PACKAGE_BUGREPORT "a suitable mailing list: https://curl.se/mail/"
@@ -86,11 +88,6 @@
 #define PACKAGE_TARNAME "curl"
 #define PACKAGE_VERSION "-"
 #define CURL_CA_BUNDLE "s:curl-ca-bundle.crt"
-
-#define SELECT_TYPE_ARG1 int
-#define SELECT_TYPE_ARG234 (fd_set *)
-#define SELECT_TYPE_ARG5 (struct timeval *)
-
 #define STDC_HEADERS 1
 #define TIME_WITH_SYS_TIME 1
 

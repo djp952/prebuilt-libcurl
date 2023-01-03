@@ -60,17 +60,17 @@ fi
   git log --pretty=full --use-mailmap $start..HEAD
   if [ -d "$CURLWWW" ]
   then
-   git -C ../curl-www log --pretty=full --use-mailmap $start..HEAD
+   git -C "$CURLWWW" log --pretty=full --use-mailmap $start..HEAD
   fi
  ) | \
-egrep -ai '(^Author|^Commit|by):' | \
+grep -Eai '(^Author|^Commit|by):' | \
 cut -d: -f2- | \
 cut '-d(' -f1 | \
 cut '-d<' -f1 | \
 tr , '\012' | \
 sed 's/ at github/ on github/' | \
 sed 's/ and /\n/' | \
-sed -e 's/^ //' -e 's/ $//g' -e 's/@users.noreply.github.com$/ on github/'
+sed -e 's/^ *//' -e 's/ $//g' -e 's/@users.noreply.github.com$/ on github/'
 
 grep -a "^  [^ \(]" RELEASE-NOTES| \
 sed 's/, */\n/g'| \

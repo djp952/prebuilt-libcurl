@@ -35,12 +35,6 @@
 /* Define if you have the <arpa/inet.h> header file. */
 /* #define HAVE_ARPA_INET_H 1 */
 
-/* Define if you have the <assert.h> header file. */
-#define HAVE_ASSERT_H 1
-
-/* Define if you have the <errno.h> header file. */
-#define HAVE_ERRNO_H 1
-
 /* Define if you have the <fcntl.h> header file. */
 #define HAVE_FCNTL_H 1
 
@@ -66,11 +60,6 @@
 /* Define if you have the <netinet/in.h> header file. */
 /* #define HAVE_NETINET_IN_H 1 */
 
-/* Define if you have the <process.h> header file. */
-#ifndef __SALFORDC__
-#define HAVE_PROCESS_H 1
-#endif
-
 /* Define if you have the <signal.h> header file. */
 #define HAVE_SIGNAL_H 1
 
@@ -78,7 +67,8 @@
 /* #define HAVE_SSL_H 1 */
 
 /* Define to 1 if you have the <stdbool.h> header file. */
-#if defined(_MSC_VER) && (_MSC_VER >= 1800)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1800)) || \
+    defined(__MINGW64_VERSION_MAJOR)
 #define HAVE_STDBOOL_H 1
 #endif
 
@@ -138,6 +128,17 @@
 #define HAVE_WS2TCPIP_H 1
 #endif
 
+/* Define to 1 if you have the <setjmp.h> header file. */
+#define HAVE_SETJMP_H 1
+
+/* Define to 1 if you have the <string.h> header file. */
+#define HAVE_STRING_H 1
+
+/* Define to 1 if you have the <libgen.h> header file. */
+#if defined(__MINGW64_VERSION_MAJOR)
+#define HAVE_LIBGEN_H 1
+#endif
+
 /* ---------------------------------------------------------------- */
 /*                        OTHER HEADER INFO                         */
 /* ---------------------------------------------------------------- */
@@ -149,7 +150,8 @@
 /* #define TIME_WITH_SYS_TIME 1 */
 
 /* Define to 1 if bool is an available type. */
-#if defined(_MSC_VER) && (_MSC_VER >= 1800)
+#if (defined(_MSC_VER) && (_MSC_VER >= 1800)) || \
+    defined(__MINGW64_VERSION_MAJOR)
 #define HAVE_BOOL_T 1
 #endif
 
@@ -161,7 +163,9 @@
 #define HAVE_CLOSESOCKET 1
 
 /* Define if you have the ftruncate function. */
-/* #define HAVE_FTRUNCATE 1 */
+#if defined(__MINGW64_VERSION_MAJOR)
+#define HAVE_FTRUNCATE 1
+#endif
 
 /* Define to 1 if you have the `getpeername' function. */
 #define HAVE_GETPEERNAME 1
@@ -254,6 +258,31 @@
 /* Define to the function return type for send. */
 #define SEND_TYPE_RETV int
 
+/* Define to 1 if you have the snprintf function. */
+#if defined(_MSC_VER) && (_MSC_VER >= 1900)
+#define HAVE_SNPRINTF 1
+#endif
+
+#if defined(_WIN32_WINNT) && _WIN32_WINNT >= 0x600  /* Vista */
+/* Define to 1 if you have a IPv6 capable working inet_ntop function. */
+#define HAVE_INET_NTOP 1
+/* Define to 1 if you have a IPv6 capable working inet_pton function. */
+#define HAVE_INET_PTON 1
+#endif
+
+/* Define to 1 if you have the `basename' function. */
+#if defined(__MINGW64_VERSION_MAJOR)
+#define HAVE_BASENAME 1
+#endif
+
+/* Define to 1 if you have the strtok_r function. */
+#if defined(__MINGW64_VERSION_MAJOR)
+#define HAVE_STRTOK_R 1
+#endif
+
+/* Define to 1 if you have the signal function. */
+#define HAVE_SIGNAL 1
+
 /* ---------------------------------------------------------------- */
 /*                       TYPEDEF REPLACEMENTS                       */
 /* ---------------------------------------------------------------- */
@@ -307,7 +336,6 @@
 #  undef USE_WINSOCK
 #  undef HAVE_WINSOCK2_H
 #  undef HAVE_WS2TCPIP_H
-#  undef HAVE_ERRNO_H
 #  undef HAVE_GETHOSTNAME
 #  undef LWIP_POSIX_SOCKETS_IO_NAMES
 #  undef RECV_TYPE_ARG1
@@ -506,11 +534,6 @@ Vista
 /* Define if struct sockaddr_in6 has the sin6_scope_id member. */
 #define HAVE_SOCKADDR_IN6_SIN6_SCOPE_ID 1
 
-#if defined(HAVE_WINSOCK2_H) && defined(_WIN32_WINNT) && \
-    (_WIN32_WINNT >= 0x0600)
-#define HAVE_STRUCT_POLLFD 1
-#endif
-
 /* ---------------------------------------------------------------- */
 /*                        LARGE FILE SUPPORT                        */
 /* ---------------------------------------------------------------- */
@@ -533,6 +556,21 @@ Vista
 
 #if !defined(USE_WIN32_LARGE_FILES) && !defined(USE_WIN32_SMALL_FILES)
 #  define USE_WIN32_SMALL_FILES
+#endif
+
+/* Number of bits in a file offset, on hosts where this is settable. */
+#if defined(USE_WIN32_LARGE_FILES) && defined(__MINGW64_VERSION_MAJOR)
+#  ifndef _FILE_OFFSET_BITS
+#  define _FILE_OFFSET_BITS 64
+#  endif
+#endif
+
+/* Define to the size of `off_t', as computed by sizeof. */
+#if defined(__MINGW64_VERSION_MAJOR) && \
+  defined(_FILE_OFFSET_BITS) && (_FILE_OFFSET_BITS == 64)
+#  define SIZEOF_OFF_T 8
+#else
+#  define SIZEOF_OFF_T 4
 #endif
 
 /* ---------------------------------------------------------------- */
@@ -560,7 +598,7 @@ Vista
 /*                           LDAP SUPPORT                           */
 /* ---------------------------------------------------------------- */
 
-#if defined(CURL_HAS_NOVELL_LDAPSDK) || defined(CURL_HAS_MOZILLA_LDAPSDK)
+#if defined(CURL_HAS_NOVELL_LDAPSDK)
 #undef USE_WIN32_LDAP
 #define HAVE_LDAP_SSL_H 1
 #define HAVE_LDAP_URL_PARSE 1
@@ -590,7 +628,7 @@ Vista
 /* ---------------------------------------------------------------- */
 
 /* Define cpu-machine-OS */
-#if !defined(OS)
+#ifndef OS
 #if defined(_M_IX86) || defined(__i386__) /* x86 (MSVC or gcc) */
 #define OS "i386-pc-win32"
 #elif defined(_M_X64) || defined(__x86_64__) /* x86_64 (MSVC >=2005 or gcc) */

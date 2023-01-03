@@ -24,6 +24,7 @@
  *
  ***************************************************************************/
 #include "curl_setup.h"
+#include "ws.h"
 
 typedef enum {
   HTTPREQ_GET,
@@ -49,6 +50,15 @@ extern const struct Curl_handler Curl_handler_http;
 #ifdef USE_SSL
 extern const struct Curl_handler Curl_handler_https;
 #endif
+
+#ifdef USE_WEBSOCKETS
+extern const struct Curl_handler Curl_handler_ws;
+
+#ifdef USE_SSL
+extern const struct Curl_handler Curl_handler_wss;
+#endif
+#endif /* websockets */
+
 
 /* Header specific functions */
 bool Curl_compareheader(const char *headerline,  /* line to check */
@@ -218,6 +228,10 @@ struct HTTP {
     HTTPSEND_BODY     /* sending body */
   } sending;
 
+#ifdef USE_WEBSOCKETS
+  struct websocket ws;
+#endif
+
 #ifndef CURL_DISABLE_HTTP
   struct dynbuf send_buffer; /* used if the request couldn't be sent in one
                                 chunk, points to an allocated send_buffer
@@ -303,7 +317,7 @@ struct http_conn {
   uint8_t binsettings[H2_BINSETTINGS_LEN];
   size_t  binlen; /* length of the binsettings data */
 
-  /* We associate the connnectdata struct with the connection, but we need to
+  /* We associate the connectdata struct with the connection, but we need to
      make sure we can identify the current "driving" transfer. This is a
      work-around for the lack of nghttp2_session_set_user_data() in older
      nghttp2 versions that we want to support. (Added in 1.31.0) */
@@ -366,11 +380,5 @@ Curl_http_output_auth(struct Curl_easy *data,
                       const char *path,
                       bool proxytunnel); /* TRUE if this is the request setting
                                             up the proxy tunnel */
-
-/*
- * Curl_allow_auth_to_host() tells if authentication, cookies or other
- * "sensitive data" can (still) be sent to this host.
- */
-bool Curl_allow_auth_to_host(struct Curl_easy *data);
 
 #endif /* HEADER_CURL_HTTP_H */

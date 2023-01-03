@@ -8,6 +8,7 @@ Category: proxy
 Example: --proxy http://proxy.example $URL
 Added: 4.0
 See-also: socks5 proxy-basic
+Multi: single
 ---
 Use the specified proxy.
 
@@ -45,4 +46,5 @@ The proxy host can be specified the same way as the proxy environment
 variables, including the protocol prefix (http://) and the embedded user +
 password.
 
-If this option is used several times, the last one will be used.
+When a proxy is used, the active FTP mode as set with --ftp-port, cannot be
+used.

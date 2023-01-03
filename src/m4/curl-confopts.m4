@@ -458,8 +458,7 @@ AC_DEFUN([CURL_CONFIGURE_SYMBOL_HIDING], [
   AC_MSG_CHECKING([whether hiding of library internal symbols will actually happen])
   CFLAG_CURL_SYMBOL_HIDING=""
   doing_symbol_hiding="no"
-  if test x"$curl_cv_native_windows" != "xyes" &&
-    test "$want_symbol_hiding" = "yes" &&
+  if test "$want_symbol_hiding" = "yes" &&
     test "$supports_symbol_hiding" = "yes"; then
     doing_symbol_hiding="yes"
     CFLAG_CURL_SYMBOL_HIDING="$symbol_hiding_CFLAGS"
@@ -618,6 +617,9 @@ AC_DEFUN([CURL_CHECK_NTLM_WB], [
   if test "$curl_cv_native_windows" = "yes" ||
     test "x$SSL_ENABLED" = "x"; then
     want_ntlm_wb_file=""
+    want_ntlm_wb="no"
+  elif test "x$ac_cv_func_fork" != "xyes"; then
+    dnl ntlm_wb requires fork
     want_ntlm_wb="no"
   fi
   AC_MSG_RESULT([$want_ntlm_wb])

@@ -109,7 +109,7 @@ static int http2_getsock(struct Curl_easy *data,
   sock[0] = conn->sock[FIRSTSOCKET];
 
   if(!(k->keepon & KEEP_RECV_PAUSE))
-    /* Unless paused - in a HTTP/2 connection we can basically always get a
+    /* Unless paused - in an HTTP/2 connection we can basically always get a
        frame so we should always be ready for one */
     bitmap |= GETSOCK_READSOCK(FIRSTSOCKET);
 
@@ -191,7 +191,7 @@ static bool http2_connisdead(struct Curl_easy *data, struct connectdata *conn)
   }
   else if(sval & CURL_CSELECT_IN) {
     /* readable with no error. could still be closed */
-    dead = !Curl_connalive(conn);
+    dead = !Curl_connalive(data, conn);
     if(!dead) {
       /* This happens before we've sent off a request and the connection is
          not in use by any other transfer, there shouldn't be any data here,
@@ -1024,9 +1024,9 @@ static int on_header(nghttp2_session *session, const nghttp2_frame *frame,
       if(!check)
         /* no memory */
         return NGHTTP2_ERR_CALLBACK_FAILURE;
-      if(!Curl_strcasecompare(check, (const char *)value) &&
+      if(!strcasecompare(check, (const char *)value) &&
          ((conn->remote_port != conn->given->defport) ||
-          !Curl_strcasecompare(conn->host.name, (const char *)value))) {
+          !strcasecompare(conn->host.name, (const char *)value))) {
         /* This is push is not for the same authority that was asked for in
          * the URL. RFC 7540 section 8.2 says: "A client MUST treat a
          * PUSH_PROMISE for which the server is not authoritative as a stream
@@ -1120,7 +1120,7 @@ static int on_header(nghttp2_session *session, const nghttp2_frame *frame,
 
   /* nghttp2 guarantees that namelen > 0, and :status was already
      received, and this is not pseudo-header field . */
-  /* convert to a HTTP1-style header */
+  /* convert to an HTTP1-style header */
   result = Curl_dyn_addn(&stream->header_recvbuf, name, namelen);
   if(result)
     return NGHTTP2_ERR_CALLBACK_FAILURE;
@@ -1277,6 +1277,27 @@ void Curl_http2_done(struct Curl_easy *data, bool premature)
   }
 }
 
+static int client_new(struct connectdata *conn,
+                      nghttp2_session_callbacks *callbacks)
+{
+#if NGHTTP2_VERSION_NUM < 0x013200
+  /* before 1.50.0 */
+  return nghttp2_session_client_new(&conn->proto.httpc.h2, callbacks, conn);
+#else
+  nghttp2_option *o;
+  int rc = nghttp2_option_new(&o);
+  if(rc)
+    return rc;
+  /* turn off RFC 9113 leading and trailing white spaces validation against
+     HTTP field value. */
+  nghttp2_option_set_no_rfc9113_leading_and_trailing_ws_validation(o, 1);
+  rc = nghttp2_session_client_new2(&conn->proto.httpc.h2, callbacks, conn,
+                                   o);
+  nghttp2_option_del(o);
+  return rc;
+#endif
+}
+
 /*
  * Initialize nghttp2 for a Curl connection
  */
@@ -1317,7 +1338,7 @@ static CURLcode http2_init(struct Curl_easy *data, struct connectdata *conn)
     nghttp2_session_callbacks_set_error_callback(callbacks, error_callback);
 
     /* The nghttp2 session is not yet setup, do it */
-    rc = nghttp2_session_client_new(&conn->proto.httpc.h2, callbacks, conn);
+    rc = client_new(conn, callbacks);
 
     nghttp2_session_callbacks_del(callbacks);
 
@@ -1330,7 +1351,7 @@ static CURLcode http2_init(struct Curl_easy *data, struct connectdata *conn)
 }
 
 /*
- * Append headers to ask for a HTTP1.1 to HTTP2 upgrade.
+ * Append headers to ask for an HTTP1.1 to HTTP2 upgrade.
  */
 CURLcode Curl_http2_request_upgrade(struct dynbuf *req,
                                     struct Curl_easy *data)
@@ -1371,7 +1392,7 @@ CURLcode Curl_http2_request_upgrade(struct dynbuf *req,
                          NGHTTP2_CLEARTEXT_PROTO_VERSION_ID, base64);
   free(base64);
 
-  k->upgr101 = UPGR101_REQUESTED;
+  k->upgr101 = UPGR101_H2;
 
   return result;
 }
@@ -2286,7 +2307,7 @@ void Curl_http2_cleanup_dependencies(struct Curl_easy *data)
     Curl_http2_remove_child(data->set.stream_depends_on, data);
 }
 
-/* Only call this function for a transfer that already got a HTTP/2
+/* Only call this function for a transfer that already got an HTTP/2
    CURLE_HTTP2_STREAM error! */
 bool Curl_h2_http_1_1_error(struct Curl_easy *data)
 {

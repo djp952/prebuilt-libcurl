@@ -122,6 +122,7 @@ man_MANS =                                      \
   CURLOPT_CAINFO.3                              \
   CURLOPT_CAINFO_BLOB.3                         \
   CURLOPT_CAPATH.3                              \
+  CURLOPT_CA_CACHE_TIMEOUT.3                    \
   CURLOPT_CERTINFO.3                            \
   CURLOPT_CHUNK_BGN_FUNCTION.3                  \
   CURLOPT_CHUNK_DATA.3                          \
@@ -404,6 +405,7 @@ man_MANS =                                      \
   CURLOPT_WILDCARDMATCH.3                       \
   CURLOPT_WRITEDATA.3                           \
   CURLOPT_WRITEFUNCTION.3                       \
+  CURLOPT_WS_OPTIONS.3                          \
   CURLOPT_XFERINFODATA.3                        \
   CURLOPT_XFERINFOFUNCTION.3                    \
   CURLOPT_XOAUTH2_BEARER.3                      \

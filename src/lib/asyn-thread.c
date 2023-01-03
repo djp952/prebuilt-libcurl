@@ -44,19 +44,8 @@
 #include <inet.h>
 #endif
 
-#if defined(USE_THREADS_POSIX)
-#  ifdef HAVE_PTHREAD_H
-#    include <pthread.h>
-#  endif
-#elif defined(USE_THREADS_WIN32)
-#  ifdef HAVE_PROCESS_H
-#    include <process.h>
-#  endif
-#endif
-
-#if (defined(NETWARE) && defined(__NOVELL_LIBC__))
-#undef in_addr_t
-#define in_addr_t unsigned long
+#if defined(USE_THREADS_POSIX) && defined(HAVE_PTHREAD_H)
+#  include <pthread.h>
 #endif
 
 #ifdef HAVE_GETADDRINFO
@@ -75,7 +64,6 @@
 #include "inet_ntop.h"
 #include "curl_threads.h"
 #include "connect.h"
-#include "socketpair.h"
 /* The last 3 #include files should be in this order */
 #include "curl_printf.h"
 #include "curl_memory.h"
@@ -541,7 +529,8 @@ void Curl_resolver_kill(struct Curl_easy *data)
   /* If we're still resolving, we must wait for the threads to fully clean up,
      unfortunately.  Otherwise, we can simply cancel to clean up any resolver
      data. */
-  if(td && td->thread_hnd != curl_thread_t_null)
+  if(td && td->thread_hnd != curl_thread_t_null
+     && (data->set.quick_exit != 1L))
     (void)thread_wait_resolv(data, NULL, FALSE);
   else
     Curl_resolver_cancel(data);
@@ -707,7 +696,7 @@ struct Curl_addrinfo *Curl_resolver_getaddrinfo(struct Curl_easy *data,
   *waitp = 0; /* default to synchronous response */
 
 #ifdef CURLRES_IPV6
-  if(Curl_ipv6works(data))
+  if((data->conn->ip_version != CURL_IPRESOLVE_V4) && Curl_ipv6works(data))
     /* The stack seems to be IPv6-enabled */
     pf = PF_UNSPEC;
 #endif /* CURLRES_IPV6 */
